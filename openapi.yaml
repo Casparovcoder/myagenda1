@@ -1,14 +1,19 @@
 openapi: 3.1.0
 info:
   title: MY AIGENDA API
-  version: 1.0.0
-  description: API for managing and listing agenda events for MY AIGENDA.
+  version: 1.1.0
+  description: >
+    API voor het beheren van afspraken in MY AIGENDA.
+    Ondersteunt het aanmaken van events, het ophalen van lijsten,
+    en het aanbieden van een ICS-feed die automatisch door Google Calendar kan worden opgehaald.
+
 servers:
   - url: https://myagenda1.onrender.com
+
 paths:
   /create-event:
     post:
-      summary: Create a new agenda event.
+      summary: Maak een nieuw agenda-event aan.
       operationId: createEvent
       requestBody:
         required: true
@@ -19,15 +24,22 @@ paths:
               properties:
                 titel:
                   type: string
+                  example: Bellen advocaat
                 starttijd:
                   type: string
                   format: date-time
+                  example: 2025-11-19T18:00:00
                 eindtijd:
                   type: string
                   format: date-time
+                  example: 2025-11-19T18:30:00
+              required:
+                - titel
+                - starttijd
+                - eindtijd
       responses:
         '200':
-          description: Event created.
+          description: Event succesvol aangemaakt.
           content:
             application/json:
               schema:
@@ -35,9 +47,10 @@ paths:
                 properties:
                   bevestiging:
                     type: string
+                    example: Aangemaakt: 2025-11-19T18:00–2025-11-19T18:30 ‘Bellen advocaat’.
   /list-events:
     get:
-      summary: List upcoming events for a given date.
+      summary: Haal een lijst van geplande events op.
       operationId: listEvents
       parameters:
         - name: datum
@@ -46,6 +59,7 @@ paths:
           schema:
             type: string
             format: date
+            example: 2025-11-19
         - name: aantal
           in: query
           schema:
@@ -53,7 +67,7 @@ paths:
             default: 10
       responses:
         '200':
-          description: List of events.
+          description: Lijst met events.
           content:
             application/json:
               schema:
@@ -70,3 +84,26 @@ paths:
                           type: string
                         eindtijd:
                           type: string
+  /calendar.ics:
+    get:
+      summary: ICS-feed van alle geplande events.
+      description: >
+        Retourneert een iCalendar (ICS) feed die Google Calendar automatisch kan ophalen.
+        Deze link kan worden toegevoegd via “Agenda toevoegen via URL”.
+      operationId: getCalendarICS
+      responses:
+        '200':
+          description: ICS-bestand met agenda-events.
+          content:
+            text/calendar:
+              schema:
+                type: string
+                example: |
+                  BEGIN:VCALENDAR
+                  VERSION:2.0
+                  BEGIN:VEVENT
+                  SUMMARY:Bellen advocaat
+                  DTSTART:20251119T180000
+                  DTEND:20251119T183000
+                  END:VEVENT
+                  END:VCALENDAR
