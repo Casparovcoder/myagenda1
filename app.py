@@ -2,17 +2,30 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from datetime import datetime
 import os
 import uuid
+import json
 
 app = Flask(__name__)
 
-# Tijdelijke opslag van afspraken (in-memory)
-events = []
+DATA_FILE = "events.json"
+
+# 🔹 Laad bestaande afspraken bij het opstarten
+if os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "r") as f:
+        events = json.load(f)
+else:
+    events = []
+
+
+def save_events():
+    """Sla events permanent op in JSON-bestand."""
+    with open(DATA_FILE, "w") as f:
+        json.dump(events, f, indent=2)
 
 
 @app.route('/create-event', methods=['POST'])
 def create_event():
     """
-    Ontvangt een nieuw event en slaat het lokaal op.
+    Ontvangt een nieuw event en slaat het op.
     Wordt ook automatisch zichtbaar in de ICS-feed (/calendar.ics)
     """
     data = request.json
@@ -20,21 +33,20 @@ def create_event():
     starttijd = data.get('starttijd')
     eindtijd = data.get('eindtijd')
 
-    # Controleer verplichte velden
     if not all([titel, starttijd, eindtijd]):
         return jsonify({"error": "titel, starttijd en eindtijd zijn verplicht"}), 400
 
-    # Maak uniek ID voor ICS
     event_id = str(uuid.uuid4())
 
-    # Voeg toe aan interne lijst
     event = {
         "id": event_id,
         "titel": titel,
         "starttijd": starttijd,
         "eindtijd": eindtijd
     }
+
     events.append(event)
+    save_events()  # 🔹 Bewaar in JSON
 
     bevestiging = f"Aangemaakt: {starttijd}–{eindtijd} ‘{titel}’."
     return jsonify({"bevestiging": bevestiging})
@@ -43,7 +55,7 @@ def create_event():
 @app.route('/list-events', methods=['GET'])
 def list_events():
     """
-    Haalt een lijst met afspraken op voor een opgegeven datum.
+    Haal een lijst met afspraken op voor een specifieke datum.
     """
     datum = request.args.get('datum')
     aantal = int(request.args.get('aantal', 10))
@@ -57,13 +69,12 @@ def list_events():
 @app.route('/calendar.ics', methods=['GET'])
 def serve_ics():
     """
-    Genereert een dynamische ICS-feed van alle events.
-    Deze link kun je toevoegen in Google Agenda:
+    Genereert dynamische ICS-feed van alle opgeslagen events.
+    Google haalt deze automatisch op via de URL:
     https://myagenda1.onrender.com/calendar.ics
     """
     ics_events = []
     for e in events:
-        # Formatteer tijden voor ICS (YYYYMMDDTHHMMSS)
         start = e['starttijd'].replace("-", "").replace(":", "").replace("T", "T")
         end = e['eindtijd'].replace("-", "").replace(":", "").replace("T", "T")
 
@@ -75,7 +86,13 @@ DTEND:{end}
 DTSTAMP:{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}
 END:VEVENT""")
 
-    ics_content = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//MY AIGENDA//EN\n" + "\n".join(ics_events) + "\nEND:VCALENDAR"
+    ics_content = (
+        "BEGIN:VCALENDAR\n"
+        "VERSION:2.0\n"
+        "PRODID:-//MY AIGENDA//EN\n"
+        + "\n".join(ics_events)
+        + "\nEND:VCALENDAR"
+    )
     return Response(ics_content, mimetype='text/calendar')
 
 
@@ -87,9 +104,7 @@ def serve_openapi():
 
 @app.route('/')
 def home():
-    """
-    Simpele homepage.
-    """
+    """Simpele homepage met uitleg."""
     return """
     <h1>MY AIGENDA API draait ✅</h1>
     <p>Gebruik deze endpoints:</p>
@@ -100,6 +115,7 @@ def home():
         <li><code>GET /openapi.yaml</code> – OpenAPI-specificatie</li>
     </ul>
     <p>ℹ️ Voeg <b>https://myagenda1.onrender.com/calendar.ics</b> toe in Google Agenda via “Agenda toevoegen via URL”.</p>
+    <p>📦 Alle afspraken worden opgeslagen in <code>events.json</code>, zodat ze behouden blijven bij herstart.</p>
     """
 
 
