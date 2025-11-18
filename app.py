@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from datetime import datetime
+import os
 
 app = Flask(__name__)
 
@@ -33,6 +34,12 @@ def list_events():
         return jsonify({"error": "datum is verplicht"}), 400
     filtered = [e for e in events if datum in e['starttijd']]
     return jsonify({"events": filtered[:aantal]})
+
+# 🔹 Nieuw: serveer het OpenAPI-bestand
+@app.route('/openapi.yaml', methods=['GET'])
+def serve_openapi():
+    """Serve the OpenAPI specification file"""
+    return send_from_directory(os.getcwd(), 'openapi.yaml')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
