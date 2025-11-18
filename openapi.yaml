@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: API for managing and listing agenda events for MY AIGENDA.
 servers:
-  - url: https://my-aigenda.onrender.com
+  - url: https://myagenda1.onrender.com
 paths:
   /create-event:
     post:
