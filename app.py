@@ -41,5 +41,11 @@ def serve_openapi():
     """Serve the OpenAPI specification file"""
     return send_from_directory(os.getcwd(), 'openapi.yaml')
 
+# 🔹 Nieuw: simpele homepage
+@app.route('/')
+def home():
+    return "MY AIGENDA API draait ✅"
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
