@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: MY AIGENDA API
+  version: 1.0.0
+  description: API for managing and listing agenda events for MY AIGENDA.
+servers:
+  - url: https://my-aigenda.onrender.com
+paths:
+  /create-event:
+    post:
+      summary: Create a new agenda event.
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titel:
+                  type: string
+                starttijd:
+                  type: string
+                  format: date-time
+                eindtijd:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Event created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bevestiging:
+                    type: string
+  /list-events:
+    get:
+      summary: List upcoming events for a given date.
+      operationId: listEvents
+      parameters:
+        - name: datum
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: aantal
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of events.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        titel:
+                          type: string
+                        starttijd:
+                          type: string
+                        eindtijd:
+                          type: string
